@@ -95,6 +95,17 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const hydrated = useStudio((s) => s.hydrated);
   useEffect(() => { useStudio.persist.rehydrate(); }, []);
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const register = () => { void navigator.serviceWorker.register("/sw.js").catch((error) => {
+      console.warn("Offline-Unterstützung konnte nicht aktiviert werden:", error);
+    }); };
+    if (document.readyState === "complete") register();
+    else {
+      window.addEventListener("load", register, { once: true });
+      return () => window.removeEventListener("load", register);
+    }
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       {hydrated ? <Outlet /> : (
