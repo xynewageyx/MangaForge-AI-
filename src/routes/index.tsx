@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Trash2, PlugZap, RotateCcw } from "lucide-react";
+import { Plus, Trash2, PlugZap, RotateCcw, Download, Upload } from "lucide-react";
 import { useStudio } from "@/lib/store";
+import { downloadBackup, parseBackup } from "@/lib/backup";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -19,7 +21,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { projects, addProject, deleteProject, resetDemo } = useStudio();
+  const { projects, addProject, deleteProject, resetDemo, restoreProjects, hydrated } = useStudio();
   const [title, setTitle] = useState("");
   const nav = useNavigate();
   return (
@@ -67,6 +69,32 @@ function Index() {
         ))}
       </ul>
 
+      <section className="mt-8 space-y-3 rounded-lg border bg-card p-4">
+        <h2 className="text-lg font-bold">Datensicherung</h2>
+        <p className="text-sm text-muted-foreground">Alle Projekte inklusive Figuren, Bilder und Anime-Szenen als JSON sichern.</p>
+        <Button className="min-h-12 w-full" disabled={!hydrated} onClick={() => downloadBackup(projects)}><Download /> Sicherung herunterladen</Button>
+        <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-md border p-3">
+          <Upload className="h-4 w-4" /> Sicherung wiederherstellen
+          <input type="file" accept=".json,application/json" className="sr-only" disabled={!hydrated}
+            onChange={async (e) => {
+              const file = e.currentTarget.files?.[0];
+              e.currentTarget.value = "";
+              if (!file) return;
+              if (file.size > 100 * 1024 * 1024) { toast.error("Datei zu groß (maximal 100 MB)."); return; }
+              try {
+                const result = parseBackup(await file.text());
+                if (!result.ok) { toast.error(result.error); return; }
+                const replace = confirm("Alle vorhandenen Projekte ERSETZEN? OK = Ersetzen, Abbrechen = weitere Auswahl.");
+                const mode = replace ? "ersetzen" : confirm("Stattdessen Projekte ZUSAMMENFÜHREN?") ? "zusammenfuehren" : null;
+                if (!mode) return;
+                restoreProjects(result.projects, mode);
+                toast.success(result.projects.length + " Projekte wiederhergestellt");
+                result.warnings.forEach((warning) => toast.warning(warning));
+              } catch { toast.error("Sicherungsdatei konnte nicht gelesen werden."); }
+            }} />
+        </label>
+        <p className="text-xs text-muted-foreground">Ersetzen überschreibt alle lokalen Projekte. Zusammenführen übernimmt importierte Projekte bei gleichen IDs.</p>
+      </section>
       <div className="mt-8 flex flex-wrap gap-2">
         <Button variant="secondary" onClick={resetDemo}><RotateCcw /> Demo-Projekt zurücksetzen</Button>
         <Button variant="secondary" asChild><Link to="/integrationen"><PlugZap /> KI-Integrationen</Link></Button>
