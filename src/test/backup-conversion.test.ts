@@ -9,6 +9,11 @@ describe("MangaForge backup", () => {
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.projects[0].title).toBe(p.title);
   });
+  it("accepts a valid empty backup", () => {
+    const result = parseBackup(JSON.stringify(buildBackup([])));
+    expect(result.ok).toBe(true);
+    if (result.ok) { expect(result.projects).toEqual([]); expect(result.warnings).toEqual([]); }
+  });
   it("rejects broken JSON", () => {
     expect(parseBackup("{bad").ok).toBe(false);
   });
