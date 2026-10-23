@@ -47,7 +47,7 @@ export function parseBackup(text: string): ParseResult {
   if (data["format"] === "mangaforge.storyboard") return { ok: false, error: "Das ist ein Storyboard-Export, keine Sicherung. Bitte eine Sicherungsdatei wählen." };
   if (data["format"] !== BACKUP_FORMAT) return { ok: false, error: "Keine MangaForge-Sicherung (Kennung fehlt)." };
   if (typeof data["version"] !== "number" || data["version"] > 1) return { ok: false, error: "Diese Sicherung stammt aus einer neueren App-Version." };
-  if (!arr(data["projects"]) || data["projects"].length === 0) return { ok: false, error: "Die Sicherung enthält keine Projekte." };
+  if (!arr(data["projects"])) return { ok: false, error: "Die Sicherung enthält keine gültige Projektliste." };
   for (let i = 0; i < data["projects"].length; i++) {
     const err = checkProject(data["projects"][i], i);
     if (err) return { ok: false, error: err };
@@ -57,7 +57,7 @@ export function parseBackup(text: string): ParseResult {
   const projects = structuredClone(data["projects"]).map(migrateProject);
   const warnings: string[] = [];
   const imgs = projects.reduce((n: number, p: Project) => n + p.volumes.reduce((m, v) => m + v.pages.reduce((k, pg) => k + pg.panels.filter((x) => x.image).length, 0), 0), 0);
-  if (imgs === 0) warnings.push("Die Sicherung enthält keine Panelbilder.");
+  if (projects.length > 0 && imgs === 0) warnings.push("Die Sicherung enthält keine Panelbilder.");
   return { ok: true, projects, warnings };
 }
 
