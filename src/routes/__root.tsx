@@ -96,7 +96,7 @@ function RootComponent() {
   const hydrated = useStudio((s) => s.hydrated);
   useEffect(() => { useStudio.persist.rehydrate(); }, []);
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
+    if (!("serviceWorker" in navigator)) return undefined;
     const register = () => { void navigator.serviceWorker.register("/sw.js").catch((error) => {
       console.warn("Offline-Unterstützung konnte nicht aktiviert werden:", error);
     }); };
