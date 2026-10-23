@@ -100,11 +100,12 @@ function RootComponent() {
     const register = () => { void navigator.serviceWorker.register("/sw.js").catch((error) => {
       console.warn("Offline-Unterstützung konnte nicht aktiviert werden:", error);
     }); };
-    if (document.readyState === "complete") register();
-    else {
+    if (document.readyState === "complete") {
+      register();
+    } else {
       window.addEventListener("load", register, { once: true });
-      return () => window.removeEventListener("load", register);
     }
+    return () => window.removeEventListener("load", register);
   }, []);
   return (
     <QueryClientProvider client={queryClient}>
