@@ -1,0 +1,19 @@
+{
+  "name": "MangaForge AI – Manga & Anime Studio",
+  "short_name": "MangaForge",
+  "description": "Manga und Anime auf Android planen und storyboarden",
+  "lang": "de",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1c1a18",
+  "theme_color": "#1c1a18",
+  "icons": [
+    {
+      "src": "/mangaforge-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
