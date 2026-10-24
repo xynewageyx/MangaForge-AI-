@@ -27,13 +27,14 @@ const providers = [
 function Integrations() {
   const [prompt, setPrompt] = useState("Schwarzweiß-Manga, dramatische Schatten, ein Schwertkämpfer mit rot leuchtenden Augen im Ascheregen, detailreiche Tuschezeichnung, keine Schrift");
   const [image, setImage] = useState<string | null>(null);
+  const [accessKey, setAccessKey] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   async function generate() {
     setLoading(true); setError(""); setImage(null);
     try {
       const response = await fetch("/api/generate-image", {
-        method: "POST", headers: { "content-type": "application/json" },
+        method: "POST", headers: { "content-type": "application/json", "x-mangaforge-ai-key": accessKey },
         body: JSON.stringify({ prompt }),
       });
       const data = await response.json() as { image?: string; error?: string };
@@ -66,12 +67,15 @@ function Integrations() {
         <p className="mt-2 text-sm text-muted-foreground">
           Der Serveranschluss für FLUX.1 schnell ist vorbereitet. Aus Schutz vor unkontrollierten
           Kosten bleibt die Generierung zunächst deaktiviert. Erst nach einer abgesicherten
-          Freigabe können hier echte Bilder erzeugt werden.
+          Freigabe und mit deinem privaten Zugangsschlüssel können hier echte Bilder erzeugt werden.
         </p>
         <label htmlFor="image-prompt" className="mt-3 block text-sm">Bildbeschreibung</label>
         <textarea id="image-prompt" className="field mt-1 min-h-28 w-full" maxLength={1800}
           value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-        <button type="button" onClick={() => void generate()} disabled={loading || prompt.trim().length < 3}
+        <label htmlFor="image-key" className="mt-3 block text-sm">Privater Bild-KI-Zugangsschlüssel</label>
+        <input id="image-key" type="password" autoComplete="off" className="mt-1 min-h-11 w-full rounded-md border bg-background px-3"
+          placeholder="Nur für diese Sitzung – wird nicht gespeichert" value={accessKey} onChange={(e) => setAccessKey(e.target.value)} />
+        <button type="button" onClick={() => void generate()} disabled={loading || prompt.trim().length < 3 || !accessKey}
           className="mt-3 min-h-12 w-full rounded-md bg-primary px-4 py-2 font-bold text-primary-foreground disabled:opacity-50">
           {loading ? "Bild wird angefordert …" : "Bildgenerierung testen"}
         </button>
