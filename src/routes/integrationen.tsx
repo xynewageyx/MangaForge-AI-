@@ -37,8 +37,8 @@ function Integrations() {
         method: "POST", headers: { "content-type": "application/json", "x-mangaforge-ai-key": accessKey },
         body: JSON.stringify({ prompt }),
       });
-      const data = await response.json() as { image?: string; error?: string };
-      if (!response.ok || !data.image) throw new Error(data.error || "Kein Bild empfangen.");
+      const data = await response.json() as { image?: string; error?: unknown };
+      if (!response.ok || !data.image) throw new Error(typeof data.error === "string" ? data.error : `Bild-KI antwortet mit HTTP ${response.status}. Bitte Deployment und Worker-Protokolle prüfen.`);
       setImage(data.image);
     } catch (e) { setError(e instanceof Error ? e.message : "Unbekannter Fehler"); }
     finally { setLoading(false); }
