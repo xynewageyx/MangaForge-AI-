@@ -47,6 +47,7 @@ function isH3SwallowedErrorBody(body: string): boolean {
 type ImageAIEnv = {
   AI?: { run: (model: string, options: { prompt: string; steps: number }) => Promise<{ image?: string }> };
   IMAGE_AI_ENABLED?: string;
+  IMAGE_AI_ACCESS_KEY?: string;
 };
 
 async function generateImage(request: Request, env: ImageAIEnv): Promise<Response> {
@@ -54,6 +55,16 @@ async function generateImage(request: Request, env: ImageAIEnv): Promise<Respons
   if (env.IMAGE_AI_ENABLED !== "true") {
     return Response.json({ error: "Bild-KI ist noch nicht freigeschaltet. Die öffentliche API bleibt aus Kostenschutzgründen deaktiviert." }, { status: 503, headers });
   }
+  if (!env.IMAGE_AI_ACCESS_KEY || env.IMAGE_AI_ACCESS_KEY.length < 24) {
+    return Response.json({ error: "Zugriffsschutz fehlt. IMAGE_AI_ACCESS_KEY muss als Cloudflare-Secret gesetzt sein." }, { status: 503, headers });
+  }
+  const providedKey = request.headers.get("x-mangaforge-ai-key") ?? "";
+  const encoder = new TextEncoder();
+  const expected = encoder.encode(env.IMAGE_AI_ACCESS_KEY);
+  const provided = encoder.encode(providedKey);
+  let mismatch = expected.length ^ provided.length;
+  for (let i = 0; i < expected.length; i++) mismatch |= expected[i] ^ (provided[i] ?? 0);
+  if (mismatch !== 0) return Response.json({ error: "Zugriff verweigert. Prüfe deinen Bild-KI-Zugangsschlüssel." }, { status: 401, headers });
   if (!env.AI) return Response.json({ error: "Cloudflare AI-Binding fehlt." }, { status: 503, headers });
   if (Number(request.headers.get("content-length") ?? 0) > 8192) {
     return Response.json({ error: "Anfrage zu groß." }, { status: 413, headers });
