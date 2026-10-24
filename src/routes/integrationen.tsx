@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Card } from "@/components/studio";
 
 export const Route = createFileRoute("/integrationen")({
@@ -43,6 +43,31 @@ function Integrations() {
           </div>
         </Card>
       ))}
+      <Card>
+        <h2 className="text-base">Cloudflare Workers AI – Bildgenerierung vorbereiten</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Cloudflare Workers AI ist ein möglicher Anbieter für die spätere Bildgenerierung.
+          Aktuell ist noch kein Bildmodell mit MangaForge verbunden. Modellverfügbarkeit,
+          kostenlose Kontingente und Kosten hängen von deinem Cloudflare-Konto ab.
+        </p>
+        <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+          <p>1. Öffne dein Cloudflare-Dashboard und wähle Workers AI.</p>
+          <p>2. Prüfe die verfügbaren Bildmodelle und die aktuellen Nutzungsgrenzen.</p>
+          <p>3. Für die Anbindung verwenden wir später einen serverseitigen Worker-Endpunkt.
+             API-Token gehören ausschließlich in Cloudflare-Secrets, niemals in dieses Formular oder in GitHub-Code.</p>
+        </div>
+        <a
+          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold"
+          href="https://dash.cloudflare.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Cloudflare öffnen <ExternalLink className="h-4 w-4" />
+        </a>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Sicherheit: Die Schaltfläche öffnet nur Cloudflare. Sie verbindet noch keinen Provider und löst keine kostenpflichtige Generierung aus.
+        </p>
+      </Card>
       <Card>
         <h2 className="text-base">So wird später verbunden</h2>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
