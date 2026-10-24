@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ExternalLink } from "lucide-react";
+import { useState } from "react";
 import { Card } from "@/components/studio";
 
 export const Route = createFileRoute("/integrationen")({
@@ -24,6 +25,23 @@ const providers = [
 ];
 
 function Integrations() {
+  const [prompt, setPrompt] = useState("Schwarzweiß-Manga, dramatische Schatten, ein Schwertkämpfer mit rot leuchtenden Augen im Ascheregen, detailreiche Tuschezeichnung, keine Schrift");
+  const [image, setImage] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  async function generate() {
+    setLoading(true); setError(""); setImage(null);
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await response.json() as { image?: string; error?: string };
+      if (!response.ok || !data.image) throw new Error(data.error || "Kein Bild empfangen.");
+      setImage(data.image);
+    } catch (e) { setError(e instanceof Error ? e.message : "Unbekannter Fehler"); }
+    finally { setLoading(false); }
+  }
   return (
     <main className="mx-auto max-w-2xl space-y-4 px-4 pb-16 pt-6">
       <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground"><ArrowLeft className="h-4 w-4" /> Projekte</Link>
@@ -43,6 +61,25 @@ function Integrations() {
           </div>
         </Card>
       ))}
+      <Card>
+        <h2 className="text-base">Manga-Bildgenerator (Test)</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Der Serveranschluss für FLUX.1 schnell ist vorbereitet. Aus Schutz vor unkontrollierten
+          Kosten bleibt die Generierung zunächst deaktiviert. Erst nach einer abgesicherten
+          Freigabe können hier echte Bilder erzeugt werden.
+        </p>
+        <label htmlFor="image-prompt" className="mt-3 block text-sm">Bildbeschreibung</label>
+        <textarea id="image-prompt" className="field mt-1 min-h-28 w-full" maxLength={1800}
+          value={prompt} onChange={(e) => setPrompt(e.target.value)} />
+        <button type="button" onClick={() => void generate()} disabled={loading || prompt.trim().length < 3}
+          className="mt-3 min-h-12 w-full rounded-md bg-primary px-4 py-2 font-bold text-primary-foreground disabled:opacity-50">
+          {loading ? "Bild wird angefordert …" : "Bildgenerierung testen"}
+        </button>
+        {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+        {image && <div className="mt-3"><img src={image} alt="Erzeugtes Manga-Bild" className="w-full rounded-md" />
+          <a href={image} download="mangaforge-bild.jpg" className="mt-2 inline-flex min-h-11 items-center rounded-md border px-3 py-2 text-sm">Bild herunterladen</a>
+        </div>}
+      </Card>
       <Card>
         <h2 className="text-base">Cloudflare Workers AI – Bildgenerierung vorbereiten</h2>
         <p className="mt-2 text-sm text-muted-foreground">
