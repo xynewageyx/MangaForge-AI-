@@ -49,6 +49,28 @@ jobs:
           fs.writeFileSync(file, JSON.stringify(config, null, 2) + '\n');
           console.log('Worker name:', config.name);
           EOF
+      - name: Add Cloudflare image API entry
+        run: |
+          cp src/worker-image-api.mjs .output/server/worker-image-api.mjs
+          cat > .output/server/mangaforge-entry.mjs <<'EOF'
+          import app from './index.mjs';
+          import { handleImageRequest } from './worker-image-api.mjs';
+          export default {
+            fetch(request, env, ctx) {
+              if (new URL(request.url).pathname === '/api/generate-image') {
+                return handleImageRequest(request, env);
+              }
+              return app.fetch(request, env, ctx);
+            }
+          };
+          EOF
+          node --input-type=module <<'EOF'
+          import fs from 'node:fs';
+          const file = '.output/server/wrangler.json';
+          const config = JSON.parse(fs.readFileSync(file, 'utf8'));
+          config.main = './mangaforge-entry.mjs';
+          fs.writeFileSync(file, JSON.stringify(config, null, 2) + String.fromCharCode(10));
+          EOF
       - name: Deploy prebuilt Nitro app to Cloudflare Workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
