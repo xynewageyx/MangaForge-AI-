@@ -1,4 +1,5 @@
 import "./lib/error-capture";
+import { env as cloudflareEnv } from "cloudflare:workers";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
@@ -93,7 +94,7 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     if (new URL(request.url).pathname === "/api/generate-image") {
       if (request.method !== "POST") return new Response("Method Not Allowed", { status: 405, headers: { Allow: "POST" } });
-      return generateImage(request, env as ImageAIEnv);
+      return generateImage(request, (env ?? cloudflareEnv) as ImageAIEnv);
     }
     try {
       const handler = await getServerEntry();
