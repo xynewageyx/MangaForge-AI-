@@ -58,6 +58,15 @@ function MangaEditor() {
     if (panel.image && !window.confirm("Dieses Panel hat bereits ein Bild. Soll die KI es durch ein neues Bild ersetzen?")) return;
     const characters = p.characters.filter((ch) => panel.cast.includes(ch.id))
       .map((ch) => [ch.code, ch.name, ch.description, "eye color " + ch.eyeColor, ...ch.refImages.filter((r) => r.use !== "anime" && r.note.trim()).slice(0, 3).map((r) => r.kind + ": " + r.note.trim())].join(", ")).join("; ");
+    const availableReferences = p.characters
+      .filter((ch) => panel.cast.includes(ch.id))
+      .flatMap((ch) => ch.refImages.filter((ref) => ref.use !== "anime" && selectedReferenceIds.includes(ref.id)));
+    if (selectedReferenceIds.length && availableReferences.length !== selectedReferenceIds.length) {
+      setAiError("Einige ausgewählte Referenzbilder gehören nicht mehr zu den Figuren dieses Panels. Bitte Auswahl prüfen.");
+      return;
+    }
+    // The current standard model accepts text only. References remain local until
+    // a separately validated image-to-image backend is explicitly enabled.
     const prompt = [
       panel.bw ? "Detailed black and white manga ink illustration" : "Detailed manga illustration",
       "Keep recurring characters visually consistent: same face, hairstyle, outfit and body proportions",
