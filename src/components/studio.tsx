@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { PlugZap, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { validateProject, type Issue } from "@/lib/store";
@@ -43,6 +43,7 @@ const bubbleShape: Record<Bubble["type"], string> = {
 export function PanelView({ panel, lang, chars, highlightEmpty, onClick, active, onBubbleMove }: {
   panel: Panel; lang: "DE" | "EN"; chars: Character[]; highlightEmpty?: boolean; onClick?: () => void; active?: boolean; onBubbleMove?: (bubbleId: string, x: number, y: number) => void;
 }) {
+  const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
   return (
     <div
       onClick={onClick}
@@ -75,15 +76,17 @@ export function PanelView({ panel, lang, chars, highlightEmpty, onClick, active,
           <div
             key={b.id}
             title={speaker?.name}
-            onPointerDown={onBubbleMove ? (e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); } : undefined}
-            onPointerUp={onBubbleMove ? (e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement?.getBoundingClientRect(); if (!rect) return; const x = Math.max(0, Math.min(85, Math.round((e.clientX - rect.left) / rect.width * 100))); const y = Math.max(0, Math.min(85, Math.round((e.clientY - rect.top) / rect.height * 100))); onBubbleMove(b.id, x, y); } : undefined}
+            onPointerDown={onBubbleMove ? (e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setDrag({ id: b.id, x: b.x, y: b.y }); } : undefined}
+            onPointerMove={onBubbleMove ? (e) => { if (drag?.id !== b.id) return; e.stopPropagation(); const rect = e.currentTarget.parentElement?.getBoundingClientRect(); if (!rect) return; setDrag({ id: b.id, x: Math.max(0, Math.min(85, Math.round((e.clientX - rect.left) / rect.width * 100))), y: Math.max(0, Math.min(85, Math.round((e.clientY - rect.top) / rect.height * 100))) }); } : undefined}
+            onPointerUp={onBubbleMove ? (e) => { e.stopPropagation(); if (drag?.id === b.id) { onBubbleMove(b.id, drag.x, drag.y); setDrag(null); } } : undefined}
+            onPointerCancel={onBubbleMove ? () => setDrag(null) : undefined}
             className={cn(
               "absolute max-w-[60%] border-ink bg-paper px-2 py-1 text-center text-[10px] leading-tight text-ink",
               bubbleShape[b.type],
               onBubbleMove && "touch-none cursor-grab",
               empty && highlightEmpty && "border-destructive bg-destructive/20",
             )}
-            style={{ left: `${b.x}%`, top: `${b.y}%` }}
+            style={{ left: `${drag?.id === b.id ? drag.x : b.x}%`, top: `${drag?.id === b.id ? drag.y : b.y}%` }}
           >
             {empty ? (highlightEmpty ? "⚠ leer" : "") : text}
           </div>
