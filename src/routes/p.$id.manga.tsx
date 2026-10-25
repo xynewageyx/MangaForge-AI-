@@ -11,6 +11,22 @@ export const Route = createFileRoute("/p/$id/manga")({ component: MangaEditor })
 
 const shotTypes = ["Totale", "Halbtotale", "Amerikanisch", "Nahaufnahme", "Detail", "Vogelperspektive", "Froschperspektive"];
 
+async function prepareReferencePng(source: string): Promise<string> {
+  const image = new Image();
+  image.src = source;
+  await image.decode();
+  const scale = Math.min(1, 500 / Math.max(image.naturalWidth, image.naturalHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.floor(image.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.floor(image.naturalHeight * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Bildverarbeitung wird auf diesem Gerät nicht unterstützt.");
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const result = canvas.toDataURL("image/png");
+  if (result.length > 350000) throw new Error("Referenzbild ist nach Verkleinerung noch zu groß.");
+  return result;
+}
+
 function MangaEditor() {
   const { id } = Route.useParams();
   const p = useProject(id)!;
@@ -21,6 +37,7 @@ function MangaEditor() {
   const [lang, setLang] = useState<"DE" | "EN">("DE");
   const [aiKey, setAiKey] = useState("");
   const [selectedReferenceIds, setSelectedReferenceIds] = useState<string[]>([]);
+  const [useReferenceModel, setUseReferenceModel] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
@@ -65,8 +82,7 @@ function MangaEditor() {
       setAiError("Einige ausgewählte Referenzbilder gehören nicht mehr zu den Figuren dieses Panels. Bitte Auswahl prüfen.");
       return;
     }
-    // The current standard model accepts text only. References remain local until
-    // a separately validated image-to-image backend is explicitly enabled.
+    if (useReferenceModel && availableReferences.length === 0) { setAiError("Bitte mindestens ein Referenzbild auswählen."); return; }
     const prompt = [
       panel.bw ? "Detailed black and white manga ink illustration" : "Detailed manga illustration",
       "Keep recurring characters visually consistent: same face, hairstyle, outfit and body proportions",
@@ -79,10 +95,11 @@ function MangaEditor() {
     ].filter(Boolean).join(". ").slice(0, 1800);
     setAiBusy(true); setAiError("");
     try {
+      const references = useReferenceModel ? await Promise.all(availableReferences.map((ref) => prepareReferencePng(ref.src))) : [];
       const response = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "content-type": "application/json", "x-mangaforge-ai-key": aiKey },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify(useReferenceModel ? { prompt, model: "reference", references } : { prompt }),
       });
       const data = await response.json() as { image?: unknown; error?: unknown };
       if (!response.ok || typeof data.image !== "string" || !data.image.startsWith("data:image/")) {
@@ -293,9 +310,14 @@ function MangaEditor() {
                   </label>
                 ))
               )}
-              <p className="text-xs text-muted-foreground">{selectedReferenceIds.length} von maximal 4 Referenzen ausgewählt. Die Auswahl wird noch nicht an die Bild-KI übertragen.</p>
+              <p className="text-xs text-muted-foreground">{selectedReferenceIds.length} von maximal 4 Referenzen ausgewählt.</p>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={useReferenceModel} onChange={(e) => setUseReferenceModel(e.target.checked)} />
+                FLUX.2 mit ausgewählten Referenzen verwenden (experimentell)
+              </label>
+              <p className="text-xs text-muted-foreground">Referenzbilder werden vor der Übertragung auf maximal 500 Pixel verkleinert. Die Funktion benötigt IMAGE_REFERENCE_ENABLED=true auf Cloudflare und kann Kosten verursachen.</p>
             </div>
-            <p className="text-xs text-muted-foreground">Referenzen dienen hier der Sichtkontrolle. Das aktuelle Bildmodell nutzt weiterhin nur Textbeschreibungen.</p>
+            <p className="text-xs text-muted-foreground">Ohne experimentellen Referenzmodus verwendet das Standardmodell nur Textbeschreibungen.</p>
             <h4 className="font-semibold">KI-Bild für dieses Panel</h4>
             <p className="text-xs text-muted-foreground">Die Beschreibung oben wird als Bildauftrag verwendet. Das Ergebnis wird automatisch diesem Panel zugeordnet und lokal im Projekt gespeichert. KI-Aufrufe können Kosten verursachen.</p>
             <label htmlFor="panel-ai-key" className="block text-sm">Privater Bild-KI-Zugangsschlüssel</label>
