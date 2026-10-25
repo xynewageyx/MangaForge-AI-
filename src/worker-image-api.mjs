@@ -15,7 +15,11 @@ export async function handleImageRequest(request, env) {
   if (!env.AI) return fail(503, "Cloudflare AI-Binding fehlt.");
   if (Number(request.headers.get("content-length") || 0) > 2000000) return fail(413, "Anfrage zu groß.");
   let body;
-  try { body = await request.json(); } catch { return fail(400, "Ungültiges JSON."); }
+  try {
+    const raw = await request.text();
+    if (raw.length > 2000000) return fail(413, "Anfrage zu groß.");
+    body = JSON.parse(raw);
+  } catch { return fail(400, "Ungültiges JSON."); }
   if (typeof body?.prompt !== "string" || body.prompt.trim().length < 3 || body.prompt.length > 1800) return fail(400, "Bildbeschreibung muss 3 bis 1800 Zeichen lang sein.");
   if (body.model !== undefined && !["standard", "reference"].includes(body.model)) return fail(400, "Unbekanntes Bildmodell.");
   if (body.model === "reference" && env.IMAGE_REFERENCE_ENABLED !== "true") return fail(503, "Referenzmodell ist noch nicht freigeschaltet.");
