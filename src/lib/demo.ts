@@ -29,7 +29,7 @@ export function createDemoProject(): Project {
           { id: "demo-pn2", description: "Nahaufnahme: Kais rot leuchtende Augen.", shotType: "Nahaufnahme", bw: true, fx: "keiner", fxColor: "#38d6f0", eyeColor: "#e8364a", cast: [kai], bubbles: [
             { id: "demo-b2", type: "denken", speakerId: kai, textDe: "Sie ist hier.", textEn: "She's here.", x: 55, y: 10 } ] },
           { id: "demo-pn3", description: "Halbtotale: Rei erscheint in einer cyanfarbenen Flamme.", shotType: "Halbtotale", bw: true, fx: "magie", fxColor: "#38d6f0", cast: [rei], bubbles: [
-            { id: "demo-b3", type: "sprechen", speakerId: rei, textDe: "Du kommst spät, Klingenträger.", textEn: "", x: 50, y: 8 } ] },
+            { id: "demo-b3", type: "sprechen", speakerId: rei, textDe: "Du kommst spät, Klingenträger.", textEn: "You\'re late, swordbearer.", x: 50, y: 8 } ] },
         ] },
         { id: p2, layout: "2v", panels: [
           { id: "demo-pn4", description: "Kai springt mit gezogenem Schwert, Speedlines.", shotType: "Halbtotale", bw: true, fx: "speedlines", fxColor: "#38d6f0", cast: [kai], bubbles: [
