@@ -15,6 +15,7 @@ async function prepareReferencePng(source: string): Promise<string> {
   const image = new Image();
   image.src = source;
   await image.decode();
+  if (!image.naturalWidth || !image.naturalHeight) throw new Error("Referenzbild konnte nicht gelesen werden.");
   const scale = Math.min(1, 500 / Math.max(image.naturalWidth, image.naturalHeight));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.floor(image.naturalWidth * scale));
