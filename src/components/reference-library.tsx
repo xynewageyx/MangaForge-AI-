@@ -31,6 +31,7 @@ export function ReferenceLibrary() {
   const [busy, setBusy] = useState(false);
   const [category, setCategory] = useState<string>("Action / Kampf");
   const [filter, setFilter] = useState<string>("Alle");
+  const [selected, setSelected] = useState<string[]>([]);
   const [projectId, setProjectId] = useState("");
   const [characterId, setCharacterId] = useState("");
   const characters = projects.find((p) => p.id === projectId)?.characters ?? [];
@@ -77,7 +78,7 @@ export function ReferenceLibrary() {
     } catch { setError("Zuordnung konnte nicht gespeichert werden."); }
   }
   async function remove(id: string) {
-    try { await transact<undefined>("readwrite", (s) => s.delete(id)); setItems((prev) => prev.filter((item) => item.id !== id)); }
+    try { await transact<undefined>("readwrite", (s) => s.delete(id)); setItems((prev) => prev.filter((item) => item.id !== id)); setSelected((prev) => prev.filter((key) => key !== id)); }
     catch { setError("Bild konnte nicht gelöscht werden."); }
   }
   return <section className="space-y-3">
@@ -114,11 +115,31 @@ export function ReferenceLibrary() {
       <option value="Alle">Alle Kategorien</option>
       {CATEGORIES.map((entry) => <option key={entry} value={entry}>{entry}</option>)}
     </select>
+    <div className="rounded-md border p-3 text-sm">
+      <p className="font-semibold">Auswahl für den Manga-Editor</p>
+      <p className="mt-1 text-muted-foreground">{selected.length} Referenzbilder ausgewählt. Die Auswahl dient aktuell zur manuellen Planung; die Bild-KI verarbeitet noch keine Referenzdateien.</p>
+      <button type="button" disabled={!selected.length}
+        onClick={() => {
+          const references = items.filter((item) => selected.includes(item.id));
+          const summary = references.map((item) => {
+            const project = projects.find((p) => p.id === item.projectId);
+            const character = project?.characters.find((ch) => ch.id === item.characterId);
+            return [item.name, item.category ?? "Sonstiges", project?.title ?? "Allgemein", character?.name ?? "Keine Figur"].join(" | ");
+          }).join("\\n");
+          void navigator.clipboard.writeText(summary).catch(() => setError("Kopieren nicht möglich. Bitte Browserberechtigung prüfen."));
+        }}
+        className="mt-3 min-h-11 rounded-md border px-3 disabled:opacity-50">Referenzliste kopieren</button>
+    </div>
     <div className="grid grid-cols-2 gap-3">
       {items.filter((item) => filter === "Alle" || (item.category ?? "Sonstiges") === filter).map((item) => <div key={item.id} className="overflow-hidden rounded-md border">
         {urls[item.id] && <img src={urls[item.id]} alt={item.name} className="aspect-square w-full object-cover" />}
         <div className="space-y-2 p-2">
           <p className="truncate text-xs" title={item.name}>{item.name}</p>
+          <label className="flex min-h-11 items-center gap-2 text-xs">
+            <input type="checkbox" checked={selected.includes(item.id)}
+              onChange={(e) => setSelected((prev) => e.target.checked ? [...prev, item.id] : prev.filter((id) => id !== item.id))} />
+            Für Manga auswählen
+          </label>
           <select aria-label={`Kategorie für ${item.name}`} value={item.category ?? "Sonstiges"}
             onChange={(e) => void updateCategory(item, e.target.value)}
             className="min-h-11 w-full rounded border bg-background px-1 text-xs">
