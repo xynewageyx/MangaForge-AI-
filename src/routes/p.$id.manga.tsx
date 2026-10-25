@@ -254,6 +254,20 @@ function MangaEditor() {
                 {!ch.refImages.some((ref) => ref.use !== "anime") && <p className="text-xs">Noch keine Manga-Referenz vorhanden.</p>}
               </div>
             ))}
+            <div className="space-y-2 rounded border p-2">
+              <p className="text-sm font-semibold">Merkmale für die KI prüfen</p>
+              {p.characters.filter((ch) => panel.cast.includes(ch.id)).map((ch) => (
+                <div key={ch.id} className="space-y-1 text-xs">
+                  <p className="font-medium">{ch.name} ({ch.code})</p>
+                  <p className="break-words">{ch.description || "Keine Aussehensbeschreibung hinterlegt."}</p>
+                  <p>Augenfarbe: {ch.eyeColor}</p>
+                  {ch.refImages.filter((ref) => ref.use !== "anime" && ref.note.trim()).map((ref) => (
+                    <p key={ref.id} className="break-words">{ref.kind}: {ref.note}</p>
+                  ))}
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground">Diese Beschreibungen und Notizen werden dem Bildauftrag hinzugefügt. Bearbeiten kannst du sie unter „Figuren“.</p>
+            </div>
             <p className="text-xs text-muted-foreground">Referenzen dienen hier der Sichtkontrolle. Das aktuelle Bildmodell nutzt weiterhin nur Textbeschreibungen.</p>
             <h4 className="font-semibold">KI-Bild für dieses Panel</h4>
             <p className="text-xs text-muted-foreground">Die Beschreibung oben wird als Bildauftrag verwendet. Das Ergebnis wird automatisch diesem Panel zugeordnet und lokal im Projekt gespeichert. KI-Aufrufe können Kosten verursachen.</p>
