@@ -13,13 +13,32 @@ export async function handleImageRequest(request, env) {
   for (let i = 0; i < expected.length; i++) mismatch |= expected[i] ^ (actual[i] ?? 0);
   if (mismatch !== 0) return fail(401, "Ungültiger Bild-KI-Zugangsschlüssel.");
   if (!env.AI) return fail(503, "Cloudflare AI-Binding fehlt.");
-  if (Number(request.headers.get("content-length") || 0) > 8192) return fail(413, "Anfrage zu groß.");
+  if (Number(request.headers.get("content-length") || 0) > 2000000) return fail(413, "Anfrage zu groß.");
   let body;
   try { body = await request.json(); } catch { return fail(400, "Ungültiges JSON."); }
   if (typeof body?.prompt !== "string" || body.prompt.trim().length < 3 || body.prompt.length > 1800) return fail(400, "Bildbeschreibung muss 3 bis 1800 Zeichen lang sein.");
-  if (body.model !== undefined && body.model !== "standard") return fail(400, "Dieses Bildmodell ist noch nicht aktiviert.");
+  if (body.model !== undefined && !["standard", "reference"].includes(body.model)) return fail(400, "Unbekanntes Bildmodell.");
+  if (body.model === "reference" && env.IMAGE_REFERENCE_ENABLED !== "true") return fail(503, "Referenzmodell ist noch nicht freigeschaltet.");
   try {
-    const result = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", { prompt: body.prompt.trim(), steps: 4 });
+    let result;
+    if (body.model === "reference") {
+      if (!Array.isArray(body.references) || body.references.length < 1 || body.references.length > 4) return fail(400, "1 bis 4 Referenzbilder erforderlich.");
+      const form = new FormData();
+      form.append("prompt", body.prompt.trim());
+      for (const [index, source] of body.references.entries()) {
+        if (typeof source !== "string" || !source.startsWith("data:image/png;base64,")) return fail(400, "Referenzen müssen PNG-Bilder sein.");
+        const encoded = source.slice("data:image/png;base64,".length);
+        if (encoded.length > 350000) return fail(413, "Referenzbild zu groß.");
+        const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+        form.append("input_image_" + index, new Blob([bytes], { type: "image/png" }), "reference.png");
+      }
+      const payload = new Response(form);
+      result = await env.AI.run("@cf/black-forest-labs/flux-2-klein-4b", {
+        multipart: { body: payload.body, contentType: payload.headers.get("content-type") }
+      });
+    } else {
+      result = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", { prompt: body.prompt.trim(), steps: 4 });
+    }
     if (typeof result?.image !== "string") return fail(502, "Bildmodell hat kein Bild geliefert.");
     return Response.json({ image: "data:image/jpeg;base64," + result.image }, { headers });
   } catch (error) {
