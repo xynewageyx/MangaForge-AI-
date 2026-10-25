@@ -24,9 +24,18 @@ const providers = [
   { name: "MP4-Render-Dienst", use: "Shots, Untertitel und Sprachspuren zu MP4 zusammenschneiden", status: "Nicht verbunden" },
 ];
 
+const mangaStyles = [
+  { id: "action", name: "Action / Kampf", prompt: "Dynamische Manga-Kampfszene, dramatische Perspektive, extreme Bewegungslinien, klare Anatomie, präzise Tuschekonturen, detaillierte Einschläge und Trümmer, schwarzweiß, keine Schrift, keine Sprechblasen" },
+  { id: "fantasy", name: "Dark Fantasy", prompt: "Düsterer Fantasy-Manga, monumentale Ruinen, verwitterte Steinsäulen, detaillierte Rüstungen, bedrohliche Wolken, filmische Komposition, tiefe Schatten, feine Schraffur, schwarzweiß, keine Schrift, keine Sprechblasen" },
+  { id: "romance", name: "Romantik / Alltag", prompt: "Gefühlvolle Manga-Szene, ausdrucksstarke individuelle Gesichter, subtile Mimik, natürliche Körperhaltung, detaillierte Haare, atmosphärisches Licht, ruhige Kameraperspektive, feine Rasterpunkte, schwarzweiß, keine Schrift, keine Sprechblasen" },
+  { id: "horror", name: "Horror / Mystery", prompt: "Psychologischer Horror-Manga, verstörende Atmosphäre, tiefe Schwarzflächen, präzise Gesichter, unheimliche Details, dramatisches Licht, dichte Schraffur, schwarzweiß, keine Schrift, keine Sprechblasen" },
+  { id: "accent", name: "Schwarzweiß + Farbeffekte", prompt: "Hochdetaillierter Schwarzweiß-Manga, dynamische Pose, kräftige Tuschelinien und Rasterpunkte, nur Augen und magische Energieeffekte leuchten in Cyan und Gold, keine weitere Farbe, keine Schrift, keine Sprechblasen" },
+] as const;
+
 function Integrations() {
   const [prompt, setPrompt] = useState("Schwarzweiß-Manga, dramatische Schatten, ein Schwertkämpfer mit rot leuchtenden Augen im Ascheregen, detailreiche Tuschezeichnung, keine Schrift");
   const [image, setImage] = useState<string | null>(null);
+  const [style, setStyle] = useState<string>("accent");
   const [accessKey, setAccessKey] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,7 +44,7 @@ function Integrations() {
     try {
       const response = await fetch("/api/generate-image", {
         method: "POST", headers: { "content-type": "application/json", "x-mangaforge-ai-key": accessKey },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: `${mangaStyles.find((item) => item.id === style)?.prompt ?? ""}. Motiv: ${prompt}`.slice(0, 1800) }),
       });
       const data = await response.json() as { image?: string; error?: unknown };
       if (!response.ok || !data.image) throw new Error(typeof data.error === "string" ? data.error : `Bild-KI antwortet mit HTTP ${response.status}. Bitte Deployment und Worker-Protokolle prüfen.`);
@@ -68,6 +77,16 @@ function Integrations() {
           Der Serveranschluss für FLUX.1 schnell ist vorbereitet. Aus Schutz vor unkontrollierten
           Kosten bleibt die Generierung zunächst deaktiviert. Erst nach einer abgesicherten
           Freigabe und mit deinem privaten Zugangsschlüssel können hier echte Bilder erzeugt werden.
+        </p>
+        <label htmlFor="manga-style" className="mt-3 block text-sm">Manga-Zeichenstil</label>
+        <select id="manga-style" value={style} onChange={(e) => setStyle(e.target.value)}
+          className="mt-1 min-h-12 w-full rounded-md border bg-background px-3 text-sm">
+          {mangaStyles.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Basierend auf deinen Referenzen: wechselnde Perspektiven, individuelle Gesichter und keine
+          automatisch gezeichneten leeren Sprechblasen. Dialoge werden später separat gesetzt.
+          Diese Stilvorgaben sind Text-Prompts, kein Training mit hochgeladenen Bildern.
         </p>
         <label htmlFor="image-prompt" className="mt-3 block text-sm">Bildbeschreibung</label>
         <textarea id="image-prompt" className="field mt-1 min-h-28 w-full" maxLength={1800}
