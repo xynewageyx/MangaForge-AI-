@@ -60,7 +60,7 @@ function MangaEditor() {
     const prompt = [
       panel.bw ? "Detailed black and white manga ink illustration" : "Detailed manga illustration",
       "Keep recurring characters visually consistent: same face, hairstyle, outfit and body proportions",
-      "Single panel artwork, clean illustration only, leave space for separately overlaid speech bubbles, no lettering, no captions, no speech bubbles, no text, no watermark",
+      "Single panel artwork, clean illustration only, leave clear negative space in the upper corners for editable speech bubbles, keep faces and key action away from dialogue areas, no lettering, no captions, no speech bubbles, no text, no watermark",
       panel.shotType, description,
       characters ? "Characters: " + characters : "",
       panel.fx === "speedlines" ? "dynamic action speed lines" : "",
