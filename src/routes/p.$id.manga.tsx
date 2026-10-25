@@ -54,6 +54,7 @@ function MangaEditor() {
     const target = { volumeId: vol.id, pageId: page.id, panelId: panel.id };
     const description = panel.description.trim();
     if (!description || !aiKey) { setAiError("Bitte Bildbeschreibung und privaten Zugangsschlüssel eingeben."); return; }
+    if (panel.image && !window.confirm("Dieses Panel hat bereits ein Bild. Soll die KI es durch ein neues Bild ersetzen?")) return;
     const characters = p.characters.filter((ch) => panel.cast.includes(ch.id))
       .map((ch) => [ch.code, ch.name, ch.description, "eye color " + ch.eyeColor, ...ch.refImages.filter((r) => r.use !== "anime" && r.note).map((r) => r.kind + ": " + r.note)].join(", ")).join("; ");
     const prompt = [
@@ -221,6 +222,7 @@ function MangaEditor() {
               onClick={() => void generatePanelImage()}>
               {aiBusy ? "Panel-Bild wird erzeugt …" : "KI-Bild erzeugen und ins Panel übernehmen"}
             </Button>
+            <p className="text-xs text-muted-foreground">Hinweis: Das aktuelle Bildmodell verwendet Figurenbeschreibungen und Referenznotizen, aber noch keine hochgeladenen Referenzbilder. Bestehende Panel-Bilder werden nur nach Bestätigung ersetzt.</p>
             {aiError && <p role="alert" className="text-sm text-destructive">{aiError}</p>}
           </div>
 
