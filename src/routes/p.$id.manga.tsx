@@ -300,6 +300,12 @@ function MangaEditor() {
               </div>
               <input className="field" placeholder="Text Deutsch" value={b.textDe} onChange={(e) => upPanel((x) => { x.bubbles[bi].textDe = e.target.value; })} />
               <input className="field" placeholder="Text English" value={b.textEn} onChange={(e) => upPanel((x) => { x.bubbles[bi].textEn = e.target.value; })} />
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="secondary" onClick={() => upPanel((x) => { x.bubbles[bi].x = 5; x.bubbles[bi].y = 5; })}>Oben links</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => upPanel((x) => { x.bubbles[bi].x = 55; x.bubbles[bi].y = 5; })}>Oben rechts</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => upPanel((x) => { x.bubbles[bi].x = 5; x.bubbles[bi].y = 65; })}>Unten links</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => upPanel((x) => { x.bubbles[bi].x = 55; x.bubbles[bi].y = 65; })}>Unten rechts</Button>
+              </div>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <label>Horizontal<input type="range" min={0} max={85} value={b.x} className="w-full accent-primary" onChange={(e) => upPanel((x) => { x.bubbles[bi].x = +e.target.value; })} /></label>
                 <label>Vertikal<input type="range" min={0} max={85} value={b.y} className="w-full accent-primary" onChange={(e) => upPanel((x) => { x.bubbles[bi].y = +e.target.value; })} /></label>
