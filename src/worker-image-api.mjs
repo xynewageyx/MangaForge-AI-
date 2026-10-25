@@ -17,6 +17,7 @@ export async function handleImageRequest(request, env) {
   let body;
   try { body = await request.json(); } catch { return fail(400, "Ungültiges JSON."); }
   if (typeof body?.prompt !== "string" || body.prompt.trim().length < 3 || body.prompt.length > 1800) return fail(400, "Bildbeschreibung muss 3 bis 1800 Zeichen lang sein.");
+  if (body.model !== undefined && body.model !== "standard") return fail(400, "Dieses Bildmodell ist noch nicht aktiviert.");
   try {
     const result = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", { prompt: body.prompt.trim(), steps: 4 });
     if (typeof result?.image !== "string") return fail(502, "Bildmodell hat kein Bild geliefert.");
