@@ -19,6 +19,9 @@ function MangaEditor() {
   const [pi, setPi] = useState(0);
   const [panelId, setPanelId] = useState<string>();
   const [lang, setLang] = useState<"DE" | "EN">("DE");
+  const [aiKey, setAiKey] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   const vol = p.volumes[Math.min(vi, p.volumes.length - 1)];
   const vIdx = p.volumes.indexOf(vol);
@@ -26,6 +29,47 @@ function MangaEditor() {
   const pgIdx = page ? vol.pages.indexOf(page) : -1;
   const nIdx = page ? page.panels.findIndex((x) => x.id === panelId) : -1;
   const panel = nIdx >= 0 ? page!.panels[nIdx] : undefined;
+
+  async function generatePanelImage() {
+    if (!panel || !page || !vol || aiBusy) return;
+    const target = { volumeId: vol.id, pageId: page.id, panelId: panel.id };
+    const description = panel.description.trim();
+    if (!description || !aiKey) { setAiError("Bitte Bildbeschreibung und privaten Zugangsschlüssel eingeben."); return; }
+    const characters = p.characters.filter((ch) => panel.cast.includes(ch.id))
+      .map((ch) => ch.name + ": " + ch.description).join("; ");
+    const prompt = [
+      panel.bw ? "Detailed black and white manga ink illustration" : "Detailed manga illustration",
+      "Single panel artwork, no lettering, no speech bubbles, no text",
+      panel.shotType, description,
+      characters ? "Characters: " + characters : "",
+      panel.fx === "speedlines" ? "dynamic action speed lines" : "",
+      panel.fx === "magie" ? "dramatic magical energy effects" : "",
+      panel.eyeColor ? "expressive glowing eyes" : "",
+    ].filter(Boolean).join(". ").slice(0, 1800);
+    setAiBusy(true); setAiError("");
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-mangaforge-ai-key": aiKey },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await response.json() as { image?: unknown; error?: unknown };
+      if (!response.ok || typeof data.image !== "string" || !data.image.startsWith("data:image/")) {
+        throw new Error(typeof data.error === "string" ? data.error : "Bildgenerierung fehlgeschlagen (HTTP " + response.status + ").");
+      }
+      const current = useStudio.getState().projects.find((project) => project.id === id);
+      const stillExists = current?.volumes.some((volume) => volume.id === target.volumeId &&
+        volume.pages.some((pg) => pg.id === target.pageId && pg.panels.some((pn) => pn.id === target.panelId)));
+      if (!stillExists) throw new Error("Das ursprüngliche Panel existiert nicht mehr.");
+      update(id, (draft) => {
+        const selected = draft.volumes.find((volume) => volume.id === target.volumeId)
+          ?.pages.find((pg) => pg.id === target.pageId)?.panels.find((pn) => pn.id === target.panelId);
+        if (selected) selected.image = data.image as string;
+      });
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : "Unbekannter Fehler bei der Bildgenerierung.");
+    } finally { setAiBusy(false); }
+  }
 
   const upPanel = (fn: (x: NonNullable<typeof panel>) => void) =>
     update(id, (d) => fn(d.volumes[vIdx].pages[pgIdx].panels[nIdx]));
@@ -139,7 +183,18 @@ function MangaEditor() {
           <Field label="Figuren im Panel (feste IDs)">
             <CastPicker value={panel.cast} chars={p.characters} use="manga" onChange={(v) => upPanel((x) => { x.cast = v; })} />
           </Field>
-          <ProviderNotice what="Panel-Bildgenerierung" />
+          <div className="space-y-2 rounded-md border p-3">
+            <h4 className="font-semibold">KI-Bild für dieses Panel</h4>
+            <p className="text-xs text-muted-foreground">Die Beschreibung oben wird als Bildauftrag verwendet. Das Ergebnis wird automatisch diesem Panel zugeordnet und lokal im Projekt gespeichert. KI-Aufrufe können Kosten verursachen.</p>
+            <label htmlFor="panel-ai-key" className="block text-sm">Privater Bild-KI-Zugangsschlüssel</label>
+            <input id="panel-ai-key" type="password" autoComplete="off" className="field min-h-11"
+              placeholder="Nicht dauerhaft gespeichert" value={aiKey} onChange={(e) => setAiKey(e.target.value)} />
+            <Button className="min-h-11 w-full" disabled={aiBusy || !panel.description.trim() || !aiKey}
+              onClick={() => void generatePanelImage()}>
+              {aiBusy ? "Panel-Bild wird erzeugt …" : "KI-Bild erzeugen und ins Panel übernehmen"}
+            </Button>
+            {aiError && <p role="alert" className="text-sm text-destructive">{aiError}</p>}
+          </div>
 
           <div className="flex items-center justify-between pt-2">
             <h3 className="text-lg">Sprechblasen</h3>
