@@ -20,6 +20,7 @@ function MangaEditor() {
   const [panelId, setPanelId] = useState<string>();
   const [lang, setLang] = useState<"DE" | "EN">("DE");
   const [aiKey, setAiKey] = useState("");
+  const [selectedReferenceIds, setSelectedReferenceIds] = useState<string[]>([]);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
@@ -268,6 +269,22 @@ function MangaEditor() {
                 </div>
               ))}
               <p className="text-xs text-muted-foreground">Diese Beschreibungen und Notizen werden dem Bildauftrag hinzugefügt. Bearbeiten kannst du sie unter „Figuren“.</p>
+            </div>
+            <div className="space-y-2 rounded border p-2">
+              <p className="text-sm font-semibold">Referenzbilder für künftige Bildmodelle auswählen</p>
+              {p.characters.filter((ch) => panel.cast.includes(ch.id)).flatMap((ch) =>
+                ch.refImages.filter((ref) => ref.use !== "anime").map((ref) => (
+                  <label key={ref.id} className="flex items-center gap-3 rounded border p-2 text-xs">
+                    <input type="checkbox" checked={selectedReferenceIds.includes(ref.id)}
+                      onChange={(e) => setSelectedReferenceIds((prev) => e.target.checked
+                        ? prev.includes(ref.id) || prev.length >= 4 ? prev : [...prev, ref.id]
+                        : prev.filter((id) => id !== ref.id))} />
+                    <img src={ref.src} alt={ch.name + " Referenz"} className="h-12 w-12 rounded object-cover" />
+                    <span>{ch.name} – {ref.kind}</span>
+                  </label>
+                ))
+              )}
+              <p className="text-xs text-muted-foreground">{selectedReferenceIds.length} von maximal 4 Referenzen ausgewählt. Die Auswahl wird noch nicht an die Bild-KI übertragen.</p>
             </div>
             <p className="text-xs text-muted-foreground">Referenzen dienen hier der Sichtkontrolle. Das aktuelle Bildmodell nutzt weiterhin nur Textbeschreibungen.</p>
             <h4 className="font-semibold">KI-Bild für dieses Panel</h4>
