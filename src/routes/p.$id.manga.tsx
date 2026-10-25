@@ -28,6 +28,41 @@ async function prepareReferencePng(source: string): Promise<string> {
   return result;
 }
 
+async function composeMangaReferences(sources: string[]): Promise<string> {
+  const images = await Promise.all(sources.map(async (src) => {
+    const image = new Image();
+    image.src = src;
+    await image.decode();
+    return image;
+  }));
+  const canvas = document.createElement("canvas");
+  canvas.width = 960;
+  canvas.height = 640;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas wird auf diesem Gerät nicht unterstützt.");
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, 960, 640);
+  const columns = images.length === 1 ? 1 : 2;
+  const rows = Math.ceil(images.length / columns);
+  const w = 960 / columns, h = 640 / rows;
+  images.forEach((image, index) => {
+    const x = (index % columns) * w, y = Math.floor(index / columns) * h;
+    const scale = Math.max(w / image.naturalWidth, h / image.naturalHeight);
+    const iw = image.naturalWidth * scale, ih = image.naturalHeight * scale;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x + 5, y + 5, w - 10, h - 10);
+    ctx.clip();
+    ctx.filter = "grayscale(1) contrast(1.35)";
+    ctx.drawImage(image, x + (w - iw) / 2, y + (h - ih) / 2, iw, ih);
+    ctx.restore();
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 6;
+    ctx.strokeRect(x + 3, y + 3, w - 6, h - 6);
+  });
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
+
 function MangaEditor() {
   const { id } = Route.useParams();
   const p = useProject(id)!;
@@ -72,7 +107,7 @@ function MangaEditor() {
     if (!panel || !page || !vol || aiBusy) return;
     const target = { volumeId: vol.id, pageId: page.id, panelId: panel.id };
     const description = panel.description.trim();
-    if (!description || !aiKey) { setAiError("Bitte Bildbeschreibung und privaten Zugangsschlüssel eingeben."); return; }
+    if (!description || (!useReferenceModel && !aiKey)) { setAiError("Bitte Bildbeschreibung und für die Cloudflare-KI den Zugangsschlüssel eingeben."); return; }
     if (panel.image && !window.confirm("Dieses Panel hat bereits ein Bild. Soll die KI es durch ein neues Bild ersetzen?")) return;
     const characters = p.characters.filter((ch) => panel.cast.includes(ch.id))
       .map((ch) => [ch.code, ch.name, ch.description, "eye color " + ch.eyeColor, ...ch.refImages.filter((r) => r.use !== "anime" && r.note.trim()).slice(0, 3).map((r) => r.kind + ": " + r.note.trim())].join(", ")).join("; ");
@@ -96,15 +131,20 @@ function MangaEditor() {
     ].filter(Boolean).join(". ").slice(0, 1800);
     setAiBusy(true); setAiError("");
     try {
-      const references = useReferenceModel ? await Promise.all(availableReferences.map((ref) => prepareReferencePng(ref.src))) : [];
-      const response = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-mangaforge-ai-key": aiKey },
-        body: JSON.stringify(useReferenceModel ? { prompt, model: "reference", references } : { prompt }),
-      });
-      const data = await response.json() as { image?: unknown; error?: unknown };
-      if (!response.ok || typeof data.image !== "string" || !data.image.startsWith("data:image/")) {
-        throw new Error(typeof data.error === "string" ? data.error : "Bildgenerierung fehlgeschlagen (HTTP " + response.status + ").");
+      let generatedImage: string;
+      if (useReferenceModel) {
+        generatedImage = await composeMangaReferences(availableReferences.map((ref) => ref.src));
+      } else {
+        const response = await fetch("/api/generate-image", {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-mangaforge-ai-key": aiKey },
+          body: JSON.stringify({ prompt }),
+        });
+        const data = await response.json() as { image?: unknown; error?: unknown };
+        if (!response.ok || typeof data.image !== "string" || !data.image.startsWith("data:image/")) {
+          throw new Error(typeof data.error === "string" ? data.error : "Bildgenerierung fehlgeschlagen (HTTP " + response.status + ").");
+        }
+        generatedImage = data.image;
       }
       const current = useStudio.getState().projects.find((project) => project.id === id);
       const stillExists = current?.volumes.some((volume) => volume.id === target.volumeId &&
@@ -113,7 +153,7 @@ function MangaEditor() {
       update(id, (draft) => {
         const selected = draft.volumes.find((volume) => volume.id === target.volumeId)
           ?.pages.find((pg) => pg.id === target.pageId)?.panels.find((pn) => pn.id === target.panelId);
-        if (selected) selected.image = data.image as string;
+        if (selected) selected.image = generatedImage;
       });
       await saveProject();
     } catch (error) {
@@ -298,7 +338,7 @@ function MangaEditor() {
               <p className="text-xs text-muted-foreground">Diese Beschreibungen und Notizen werden dem Bildauftrag hinzugefügt. Bearbeiten kannst du sie unter „Figuren“.</p>
             </div>
             <div className="space-y-2 rounded border p-2">
-              <p className="text-sm font-semibold">Referenzbilder für künftige Bildmodelle auswählen</p>
+              <p className="text-sm font-semibold">Referenzbilder für die MangaForge Reference Engine auswählen</p>
               {p.characters.filter((ch) => panel.cast.includes(ch.id)).flatMap((ch) =>
                 ch.refImages.filter((ref) => ref.use !== "anime").map((ref) => (
                   <label key={ref.id} className="flex items-center gap-3 rounded border p-2 text-xs">
@@ -314,9 +354,9 @@ function MangaEditor() {
               <p className="text-xs text-muted-foreground">{selectedReferenceIds.length} von maximal 4 Referenzen ausgewählt.</p>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={useReferenceModel} onChange={(e) => setUseReferenceModel(e.target.checked)} />
-                FLUX.2 mit ausgewählten Referenzen verwenden (experimentell)
+                MangaForge Reference Engine verwenden (lokal, kostenlos)
               </label>
-              <p className="text-xs text-muted-foreground">Referenzbilder werden vor der Übertragung auf maximal 500 Pixel verkleinert. Die Funktion benötigt IMAGE_REFERENCE_ENABLED=true auf Cloudflare und kann Kosten verursachen.</p>
+              <p className="text-xs text-muted-foreground">Die ausgewählten Bilder werden direkt auf deinem Gerät zu einer Schwarz-Weiß-Manga-Collage kombiniert. Keine Cloudflare-Kosten. Das ist eine Bildkomposition, keine neue KI-generierte Szene.</p>
             </div>
             <p className="text-xs text-muted-foreground">Ohne experimentellen Referenzmodus verwendet das Standardmodell nur Textbeschreibungen.</p>
             <h4 className="font-semibold">KI-Bild für dieses Panel</h4>
