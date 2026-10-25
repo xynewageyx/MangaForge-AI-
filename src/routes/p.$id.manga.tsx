@@ -159,8 +159,9 @@ function MangaEditor() {
               ))}
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">Sprechblasen im Seitenbild mit dem Finger an die gewünschte Position ziehen und loslassen.</p>
           <div className="mx-auto max-w-md">
-            <PageView page={page} lang={lang} chars={p.characters} activePanel={panelId} onPanel={setPanelId} highlightEmpty />
+            <PageView page={page} lang={lang} chars={p.characters} activePanel={panelId} onPanel={setPanelId} onBubbleMove={(selectedPanelId, bubbleId, x, y) => update(id, (draft) => { const bubble = draft.volumes[vIdx].pages[pgIdx].panels.find((item) => item.id === selectedPanelId)?.bubbles.find((item) => item.id === bubbleId); if (bubble) { bubble.x = x; bubble.y = y; } })} highlightEmpty />
           </div>
           <div className="flex justify-between text-sm">
             <Button size="sm" variant="ghost" disabled={pgIdx === 0} onClick={() => setPi(pgIdx - 1)}><ChevronLeft /> Zurück</Button>
