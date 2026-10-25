@@ -22,6 +22,25 @@ function MangaEditor() {
   const [aiKey, setAiKey] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function saveProject() {
+    setSaving(true);
+    setSaveMessage("");
+    try {
+      const options = useStudio.persist.getOptions();
+      if (!options.storage) throw new Error("Lokaler Speicher ist nicht verfügbar.");
+      const state = useStudio.getState();
+      await options.storage.setItem(options.name, {
+        state: { projects: state.projects, syncBases: state.syncBases },
+        version: options.version ?? 0,
+      });
+      setSaveMessage("Projekt auf diesem Gerät gespeichert.");
+    } catch (error) {
+      setSaveMessage("Speichern fehlgeschlagen: " + (error instanceof Error ? error.message : "Unbekannter Fehler"));
+    } finally { setSaving(false); }
+  }
 
   const vol = p.volumes[Math.min(vi, p.volumes.length - 1)];
   const vIdx = p.volumes.indexOf(vol);
@@ -66,6 +85,7 @@ function MangaEditor() {
           ?.pages.find((pg) => pg.id === target.pageId)?.panels.find((pn) => pn.id === target.panelId);
         if (selected) selected.image = data.image as string;
       });
+      await saveProject();
     } catch (error) {
       setAiError(error instanceof Error ? error.message : "Unbekannter Fehler bei der Bildgenerierung.");
     } finally { setAiBusy(false); }
@@ -87,6 +107,13 @@ function MangaEditor() {
       {vol && (
         <input className="field" value={vol.title} aria-label="Bandtitel" onChange={(e) => update(id, (d) => { d.volumes[vIdx].title = e.target.value; })} />
       )}
+
+      <div className="flex flex-wrap items-center gap-2 rounded-md border p-2">
+        <Button type="button" className="min-h-11" onClick={() => void saveProject()} disabled={saving}>
+          {saving ? "Speichert …" : "Projekt jetzt speichern"}
+        </Button>
+        <span role="status" className="text-xs text-muted-foreground">{saveMessage || "Änderungen werden normalerweise automatisch gespeichert."}</span>
+      </div>
 
       <ValidationList project={p} area="Manga" />
 
