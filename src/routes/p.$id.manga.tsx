@@ -239,6 +239,22 @@ function MangaEditor() {
             <CastPicker value={panel.cast} chars={p.characters} use="manga" onChange={(v) => upPanel((x) => { x.cast = v; })} />
           </Field>
           <div className="space-y-2 rounded-md border p-3">
+            <h4 className="font-semibold">Figurenreferenzen im Panel</h4>
+            {p.characters.filter((ch) => panel.cast.includes(ch.id)).map((ch) => (
+              <div key={ch.id} className="space-y-2">
+                <p className="text-sm">{ch.code} – {ch.name}</p>
+                <div className="flex gap-2 overflow-x-auto">
+                  {ch.refImages.filter((ref) => ref.use !== "anime").map((ref) => (
+                    <figure key={ref.id} className="w-24 shrink-0">
+                      <img src={ref.src} alt={ch.name + " " + ref.kind} loading="lazy" className="h-24 w-24 rounded object-cover" />
+                      <figcaption className="text-xs">{ref.kind}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+                {!ch.refImages.some((ref) => ref.use !== "anime") && <p className="text-xs">Noch keine Manga-Referenz vorhanden.</p>}
+              </div>
+            ))}
+            <p className="text-xs text-muted-foreground">Referenzen dienen hier der Sichtkontrolle. Das aktuelle Bildmodell nutzt weiterhin nur Textbeschreibungen.</p>
             <h4 className="font-semibold">KI-Bild für dieses Panel</h4>
             <p className="text-xs text-muted-foreground">Die Beschreibung oben wird als Bildauftrag verwendet. Das Ergebnis wird automatisch diesem Panel zugeordnet und lokal im Projekt gespeichert. KI-Aufrufe können Kosten verursachen.</p>
             <label htmlFor="panel-ai-key" className="block text-sm">Privater Bild-KI-Zugangsschlüssel</label>
