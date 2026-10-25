@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { Card } from "@/components/studio";
+import { ReferenceLibrary } from "@/components/reference-library";
 
 export const Route = createFileRoute("/integrationen")({
   head: () => ({
@@ -71,6 +72,7 @@ function Integrations() {
           </div>
         </Card>
       ))}
+      <Card><ReferenceLibrary /></Card>
       <Card>
         <h2 className="text-base">Manga-Bildgenerator (Test)</h2>
         <p className="mt-2 text-sm text-muted-foreground">
