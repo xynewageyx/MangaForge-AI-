@@ -6,7 +6,10 @@ import { layoutCount } from "@/lib/layouts";
 describe("studio rules", () => {
   it("flags bubbles missing DE or EN text", () => {
     const e = findEmptyBubbles(createDemoProject());
-    expect(e.map((x) => x.missing)).toEqual([["EN"], ["DE", "EN"]]);
+    expect(e.map((x) => x.missing)).toEqual([["DE", "EN"]]);
+    const project = createDemoProject();
+    project.volumes[0].pages[0].panels[2].bubbles[0].textEn = "";
+    expect(findEmptyBubbles(project).map((x) => x.missing)).toEqual([["EN"], ["DE", "EN"]]);
   });
   it("converts one manga panel into one storyboard shot", () => {
     const p = createDemoProject();
