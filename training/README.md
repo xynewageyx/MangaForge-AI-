@@ -16,3 +16,17 @@ Dieses Verzeichnis bereitet ein späteres Fine-Tuning eines frei lizenzierten Bi
 
 ## Datenschutz
 Keine persönlichen Fotos oder Daten Dritter ohne Erlaubnis. Keine Zugangsschlüssel in Manifesten speichern. Die Validierung kontrolliert Metadaten, **nicht** automatisch die Echtheit einer Lizenz.
+
+## Bilddateien zusätzlich prüfen
+
+Für einen Hugging-Face-ImageFolder-Datensatz kann `training/validate_dataset.py` eingesetzt werden:
+
+```bash
+python training/validate_dataset.py /pfad/zum/privaten/imagefolder
+```
+
+Dort muss `metadata.jsonl` pro Bild `file_name`, `text`, `license` und `source` enthalten. Dieser Validator prüft Bilddateien und Caption-Felder, nicht die Echtheit der Lizenzen. Das bestehende `validate_manifest.py` prüft separat den umfangreicheren Rechte-/Split-Nachweis. Beide Formate sind verschieden; eine Konvertierung zwischen ihnen ist noch nicht implementiert.
+
+Trainingsreferenz: https://huggingface.co/docs/diffusers/en/training/create_dataset
+
+**Wichtig:** Weder ein GPU-Training noch das Herunterladen eines Basismodells wurde gestartet. Ein späteres LoRA-Finetuning braucht ein geeignet lizenziertes Basismodell und eine GPU-Umgebung; das Android-Handy ist vor allem für Datensammlung und Projektsteuerung geeignet.
