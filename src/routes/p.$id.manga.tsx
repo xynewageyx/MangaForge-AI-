@@ -55,15 +55,16 @@ function MangaEditor() {
     const description = panel.description.trim();
     if (!description || !aiKey) { setAiError("Bitte Bildbeschreibung und privaten Zugangsschlüssel eingeben."); return; }
     const characters = p.characters.filter((ch) => panel.cast.includes(ch.id))
-      .map((ch) => ch.name + ": " + ch.description).join("; ");
+      .map((ch) => [ch.code, ch.name, ch.description, "eye color " + ch.eyeColor, ...ch.refImages.filter((r) => r.use !== "anime" && r.note).map((r) => r.kind + ": " + r.note)].join(", ")).join("; ");
     const prompt = [
       panel.bw ? "Detailed black and white manga ink illustration" : "Detailed manga illustration",
-      "Single panel artwork, no lettering, no speech bubbles, no text",
+      "Consistent recurring character appearance across manga panels",
+      "Single panel artwork, no lettering, no speech bubbles, no text, no watermark",
       panel.shotType, description,
       characters ? "Characters: " + characters : "",
       panel.fx === "speedlines" ? "dynamic action speed lines" : "",
-      panel.fx === "magie" ? "dramatic magical energy effects" : "",
-      panel.eyeColor ? "expressive glowing eyes" : "",
+      panel.fx === "magie" ? "dramatic magical energy effects in " + panel.fxColor : "",
+      panel.eyeColor ? "glowing eyes in " + panel.eyeColor : "",
     ].filter(Boolean).join(". ").slice(0, 1800);
     setAiBusy(true); setAiError("");
     try {
