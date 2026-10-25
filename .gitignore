@@ -30,3 +30,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Private training datasets and model artifacts
+training/private/
+training/data/
+training/outputs/
+training/checkpoints/
+*.safetensors
+*.ckpt
+*.pt
+*.pth
