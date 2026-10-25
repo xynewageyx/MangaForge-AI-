@@ -56,7 +56,7 @@ function MangaEditor() {
     if (!description || !aiKey) { setAiError("Bitte Bildbeschreibung und privaten Zugangsschlüssel eingeben."); return; }
     if (panel.image && !window.confirm("Dieses Panel hat bereits ein Bild. Soll die KI es durch ein neues Bild ersetzen?")) return;
     const characters = p.characters.filter((ch) => panel.cast.includes(ch.id))
-      .map((ch) => [ch.code, ch.name, ch.description, "eye color " + ch.eyeColor, ...ch.refImages.filter((r) => r.use !== "anime" && r.note).map((r) => r.kind + ": " + r.note)].join(", ")).join("; ");
+      .map((ch) => [ch.code, ch.name, ch.description, "eye color " + ch.eyeColor, ...ch.refImages.filter((r) => r.use !== "anime" && r.note.trim()).slice(0, 3).map((r) => r.kind + ": " + r.note.trim())].join(", ")).join("; ");
     const prompt = [
       panel.bw ? "Detailed black and white manga ink illustration" : "Detailed manga illustration",
       "Keep recurring characters visually consistent: same face, hairstyle, outfit and body proportions",
