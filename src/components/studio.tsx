@@ -40,8 +40,8 @@ const bubbleShape: Record<Bubble["type"], string> = {
   erzaehler: "rounded-none border-2",
 };
 
-export function PanelView({ panel, lang, chars, highlightEmpty, onClick, active }: {
-  panel: Panel; lang: "DE" | "EN"; chars: Character[]; highlightEmpty?: boolean; onClick?: () => void; active?: boolean;
+export function PanelView({ panel, lang, chars, highlightEmpty, onClick, active, onBubbleMove }: {
+  panel: Panel; lang: "DE" | "EN"; chars: Character[]; highlightEmpty?: boolean; onClick?: () => void; active?: boolean; onBubbleMove?: (bubbleId: string, x: number, y: number) => void;
 }) {
   return (
     <div
@@ -75,9 +75,12 @@ export function PanelView({ panel, lang, chars, highlightEmpty, onClick, active 
           <div
             key={b.id}
             title={speaker?.name}
+            onPointerDown={onBubbleMove ? (e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); } : undefined}
+            onPointerUp={onBubbleMove ? (e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement?.getBoundingClientRect(); if (!rect) return; const x = Math.max(0, Math.min(85, Math.round((e.clientX - rect.left) / rect.width * 100))); const y = Math.max(0, Math.min(85, Math.round((e.clientY - rect.top) / rect.height * 100))); onBubbleMove(b.id, x, y); } : undefined}
             className={cn(
               "absolute max-w-[60%] border-ink bg-paper px-2 py-1 text-center text-[10px] leading-tight text-ink",
               bubbleShape[b.type],
+              onBubbleMove && "touch-none cursor-grab",
               empty && highlightEmpty && "border-destructive bg-destructive/20",
             )}
             style={{ left: `${b.x}%`, top: `${b.y}%` }}
@@ -90,8 +93,8 @@ export function PanelView({ panel, lang, chars, highlightEmpty, onClick, active 
   );
 }
 
-export function PageView({ page, lang, chars, activePanel, onPanel, highlightEmpty, className }: {
-  page: MangaPage; lang: "DE" | "EN"; chars: Character[]; activePanel?: string; onPanel?: (id: string) => void; highlightEmpty?: boolean; className?: string;
+export function PageView({ page, lang, chars, activePanel, onPanel, onBubbleMove, highlightEmpty, className }: {
+  page: MangaPage; lang: "DE" | "EN"; chars: Character[]; activePanel?: string; onPanel?: (id: string) => void; onBubbleMove?: (panelId: string, bubbleId: string, x: number, y: number) => void; highlightEmpty?: boolean; className?: string;
 }) {
   const l = getLayout(page.layout);
   return (
@@ -101,7 +104,7 @@ export function PageView({ page, lang, chars, activePanel, onPanel, highlightEmp
     >
       {page.panels.map((p, i) => (
         <div key={p.id} className="grid min-h-0" style={{ gridArea: areaName(i) }}>
-          <PanelView panel={p} lang={lang} chars={chars} highlightEmpty={highlightEmpty} active={activePanel === p.id} onClick={onPanel ? () => onPanel(p.id) : undefined} />
+          <PanelView panel={p} lang={lang} chars={chars} highlightEmpty={highlightEmpty} active={activePanel === p.id} onClick={onPanel ? () => onPanel(p.id) : undefined} onBubbleMove={onBubbleMove ? (bubbleId, x, y) => onBubbleMove(p.id, bubbleId, x, y) : undefined} />
         </div>
       ))}
     </div>
