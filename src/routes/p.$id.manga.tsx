@@ -30,7 +30,7 @@ function MangaEditor() {
     setSaveMessage("");
     try {
       const options = useStudio.persist.getOptions();
-      if (!options.storage) throw new Error("Lokaler Speicher ist nicht verfügbar.");
+      if (!options.storage || !options.name) throw new Error("Lokaler Speicher ist nicht verfügbar.");
       const state = useStudio.getState();
       await options.storage.setItem(options.name, {
         state: { projects: state.projects, syncBases: state.syncBases },
