@@ -59,7 +59,7 @@ function MangaEditor() {
       .map((ch) => [ch.code, ch.name, ch.description, "eye color " + ch.eyeColor, ...ch.refImages.filter((r) => r.use !== "anime" && r.note).map((r) => r.kind + ": " + r.note)].join(", ")).join("; ");
     const prompt = [
       panel.bw ? "Detailed black and white manga ink illustration" : "Detailed manga illustration",
-      "Consistent recurring character appearance across manga panels",
+      "Keep recurring characters visually consistent: same face, hairstyle, outfit and body proportions",
       "Single panel artwork, no lettering, no speech bubbles, no text, no watermark",
       panel.shotType, description,
       characters ? "Characters: " + characters : "",
