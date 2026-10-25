@@ -4,10 +4,16 @@ import { pageToScene } from "@/lib/store";
 import { buildStoryboard, validatePage, pageHasBlockingErrors } from "@/lib/storyboard";
 
 describe("workflow: validation and conversion", () => {
-  it("blocks demo page 1 because a bubble lacks EN text", () => {
+  it("blocks page 1 when an English bubble is missing", () => {
     const p = createDemoProject();
+    p.volumes[0].pages[0].panels[2].bubbles[0].textEn = "";
     expect(pageHasBlockingErrors(p, "demo-pg1")).toBe(true);
     expect(validatePage(p, "demo-pg1").some((i) => i.message.includes("Panel 3: Sprechblase ohne EN"))).toBe(true);
+  });
+  it("accepts the corrected demo page 1", () => {
+    const p = createDemoProject();
+    expect(pageHasBlockingErrors(p, "demo-pg1")).toBe(false);
+    expect(validatePage(p, "demo-pg1").some((i) => i.message.includes("Panel 3: Sprechblase ohne EN"))).toBe(false);
   });
   it("unblocks the page once the bubble is filled; missing images stay warnings", () => {
     const p = createDemoProject();
