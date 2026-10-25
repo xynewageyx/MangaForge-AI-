@@ -140,7 +140,16 @@ export function migrateProject(p: any): Project {
     code: c.code ?? `CHR-${String(i + 1).padStart(3, "0")}`,
     refImages: (c.refImages ?? []).map((r: any) => (typeof r === "string" ? { id: uid(), src: r, kind: "Front", use: "beide", note: "" } : r)),
   }));
-  p.volumes?.forEach((v: any) => v.pages.forEach((pg: any) => pg.panels.forEach((pn: any) => { pn.cast ??= []; })));
+  p.volumes?.forEach((v: any) => v.pages.forEach((pg: any) => pg.panels.forEach((pn: any) => {
+    pn.cast ??= [];
+    // Repair the shipped demo translation without overwriting user-written dialogue.
+    if (p.id === "demo-project" && pn.id === "demo-pn3") {
+      const bubble = pn.bubbles?.find((b: any) => b.id === "demo-b3");
+      if (bubble?.textDe === "Du kommst spät, Klingenträger." && !bubble.textEn?.trim()) {
+        bubble.textEn = "You're late, swordbearer.";
+      }
+    }
+  })));
   const pageById = new Map<string, any>();
   p.volumes?.forEach((v: any) => v.pages.forEach((pg: any) => pageById.set(pg.id, pg)));
   p.seasons?.forEach((s: any) => s.episodes.forEach((e: any) => e.scenes.forEach((sc: any) => sc.shots.forEach((sh: any, i: number) => {
@@ -203,7 +212,7 @@ export const useStudio = create<State>()(
       name: "mangaforge-studio",
       storage: createJSONStorage(() => idbStorage),
       skipHydration: true,
-      version: 4,
+      version: 5,
       migrate: (state: any) => ({ ...state, syncBases: state?.syncBases ?? {}, projects: (state?.projects ?? []).map(migrateProject) }),
       partialize: (s) => ({ projects: s.projects, syncBases: s.syncBases }),
       onRehydrateStorage: () => () => useStudio.setState({ hydrated: true }),
