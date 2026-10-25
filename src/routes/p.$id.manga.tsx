@@ -208,6 +208,32 @@ function MangaEditor() {
               upPanel((x) => { x.image = url; });
             }} />
           </Field>
+          {panel.image && (
+            <div className="space-y-2 rounded-md border p-3">
+              <h4 className="font-semibold">Bild als Figurenreferenz übernehmen</h4>
+              <p className="text-xs text-muted-foreground">Speichert dieses Panel-Bild zusätzlich bei der gewählten Figur. Wenn mehrere Figuren zu sehen sind, zeigt die Referenz weiterhin das ganze Panel. Das aktuelle KI-Modell kann die Bilddatei noch nicht als direkte Vorlage verwenden.</p>
+              {p.characters.filter((ch) => panel.cast.includes(ch.id)).map((ch) => (
+                <Button key={ch.id} type="button" size="sm" variant="secondary" className="min-h-11 w-full"
+                  onClick={() => {
+                    const image = panel.image;
+                    if (!image) return;
+                    update(id, (draft) => {
+                      const character = draft.characters.find((item) => item.id === ch.id);
+                      if (!character) return;
+                      if (character.refImages.some((ref) => ref.src === image)) return;
+                      character.refImages.push({
+                        id: uid(), src: image, kind: "Front", use: "manga",
+                        note: "Panelreferenz für " + character.name + ": " + panel.description.slice(0, 140),
+                      });
+                    });
+                    setSaveMessage("Referenz für " + ch.name + " hinzugefügt. Änderungen werden automatisch gespeichert.");
+                  }}>
+                  Referenz für {ch.name} speichern
+                </Button>
+              ))}
+              {panel.cast.length === 0 && <p className="text-xs text-muted-foreground">Ordne zuerst unter „Figuren im Panel“ eine Figur zu.</p>}
+            </div>
+          )}
           {panel.image && <Button size="sm" variant="ghost" onClick={() => upPanel((x) => { x.image = undefined; })}>Bild entfernen</Button>}
           <Field label="Figuren im Panel (feste IDs)">
             <CastPicker value={panel.cast} chars={p.characters} use="manga" onChange={(v) => upPanel((x) => { x.cast = v; })} />
